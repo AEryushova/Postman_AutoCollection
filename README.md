@@ -1,1 +1,1 @@
-# Postman_AutoCollection
+# This is a Postman autocollection for API testing
