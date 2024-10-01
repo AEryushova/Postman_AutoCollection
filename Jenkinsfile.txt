@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    environment {
+        GIT_CREDENTIALS_ID = 'gitlab-credentials'
+        REPO_URL = 'http://gitlab.smuit.ru/apiskaeva/admin_panel_API_test.git' 
+        COLLECTION_PATH = "${WORKSPACE}/collections/AdminPanel_Auto.postman_collection.json"
+        ENVIRONMENT_PATH = "${WORKSPACE}/collections/Test_Environment_Freeze.postman_environment.json"
+    }
+    
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                git branch: 'master', credentialsId: env.GIT_CREDENTIALS_ID, url: env.REPO_URL
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    try {
+                        sh """
+                            newman run '${env.COLLECTION_PATH}' \
+                            --environment '${env.ENVIRONMENT_PATH}' \
+                            --reporters cli,allure \
+                            --reporter-allure-export '${WORKSPACE}/results/allureReport'
+                        """
+                    } catch (Exception e) {
+                        echo 'Tests failed'
+                    }
+                }
+            }
+        }
+
+        stage('Reporting') {
+            steps {
+                allure includeProperties: false, jdk: '', results: [[path: 'results']]
+            }
+        }
+    }
+}
